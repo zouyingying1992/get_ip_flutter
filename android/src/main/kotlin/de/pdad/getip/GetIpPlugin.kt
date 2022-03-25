@@ -1,22 +1,46 @@
 package de.pdad.getip
 
+import android.content.Context
+import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.net.NetworkInterface
 import java.util.*
+import androidx.annotation.NonNull
+import androidx.annotation.Nullable
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 
-class GetIpPlugin(): MethodCallHandler {
+import io.flutter.plugin.common.BinaryMessenger
+
+
+class GetIpPlugin: FlutterPlugin,MethodCallHandler {
+
+  var methodChannel: MethodChannel? = null
+  var applicationContext: Context? = null
   companion object {
     @JvmStatic
-    fun registerWith(registrar: Registrar): Unit {
-      val channel = MethodChannel(registrar.messenger(), "get_ip")
-      channel.setMethodCallHandler(GetIpPlugin())
+    fun registerWith(registrar: Registrar) {
+      val plugin = GetIpPlugin()
+      plugin.setupChannel(registrar.messenger(), registrar.context())
     }
   }
 
+  fun setupChannel(messenger: BinaryMessenger, context: Context) {
+    methodChannel = MethodChannel(messenger, "get_ip")
+    methodChannel?.setMethodCallHandler(this)
+  }
+
+  override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+    setupChannel(binding.binaryMessenger, binding.applicationContext)
+  }
+  override fun onDetachedFromEngine(p0: FlutterPlugin.FlutterPluginBinding) {
+    methodChannel?.setMethodCallHandler(null)
+    methodChannel = null
+  }
   override fun onMethodCall(call: MethodCall, result: Result): Unit {
     if (call.method.equals("getIpAdress")) {
       result.success(getIPAddress(true))
